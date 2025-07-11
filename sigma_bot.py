@@ -10,6 +10,50 @@ logging.basicConfig(
 import logging
 import os
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
+
+# Dictionary to store alerts
+price_alerts = {}
+
+async def set_alert(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        symbol = context.args[0].upper()
+        price = float(context.args[1])
+
+        user_id = update.effective_user.id
+        if user_id not in price_alerts:
+            price_alerts[user_id] = {}
+        price_alerts[user_id][symbol] = price
+
+        await update.message.reply_text(f"✅ Alert set for {symbol} at ${price:.2f}")
+    except Exception as e:
+        await update.message.reply_text("❌ Usage: /alert SYMBOL PRICE")
+
+async def remove_alert(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        symbol = context.args[0].upper()
+        user_id = update.effective_user.id
+        if symbol in price_alerts.get(user_id, {}):
+            del price_alerts[user_id][symbol]
+            await update.message.reply_text(f"✅ Removed alert for {symbol}")
+        else:
+            await update.message.reply_text(f"⚠️ No alert set for {symbol}")
+    except Exception:
+        await update.message.reply_text("❌ Usage: /removealert SYMBOL")
+
+async def show_alerts(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    alerts = price_alerts.get(user_id, {})
+    if not alerts:
+        await update.message.reply_text("🔕 No active alerts.")
+        return
+
+    msg = "🔔 Your alerts:\n"
+    for symbol, price in alerts.items():
+        msg += f"• {symbol}: ${price:.2f}\n"
+
+    await update.message.reply_text(msg)
 
 # Import or define your sheet-logging function here
 # from your_logging_module import log_trade_to_sheet
