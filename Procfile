@@ -1,2 +1,3 @@
-worker: python sigma_bot.py
+web: python sigma_bot.py
+
 
